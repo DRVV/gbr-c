@@ -58,6 +58,7 @@ double eval_split(sample* arr, size_t, size_t, size_t);
 
 void fit(node* tree, sample* samples, int);
 void predict(node* tree, size_t, double* predictor, double* result, size_t);
+
 double trace_tree(node* tree, size_t, double predictor);
 
 void print_tree(node tree[], size_t);
@@ -70,53 +71,10 @@ void create_training_samples(double*, double*, sample*, size_t);
 void terminalize(node*, sample*, size_t, size_t);
 
 
-
-#define LEN_DATA 12
-int main() {
-	// dummy data
-	double input_feature[] = { 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 9 };
-	double input_target[] = { 30, 10, 40, 10, 50, 90, 20, 60, 50, 30, 50, 90 };
-	int len_data = 12;
-
-	sample training_samples[LEN_DATA];
-	create_training_samples(input_feature, input_target, training_samples,
-			LEN_DATA);
-	print_samples(training_samples, LEN_DATA);
-	//print_double_array(input_data, len_data);
-
-	// initialise nodes
-	node tree[NUM_NODES];
-	init_tree(tree, NUM_NODES);
-
-	///// debug /////
-	puts("Init nodes:");
-	print_tree(tree, NUM_NODES);
-
-	fit(tree, training_samples, len_data);
-	/* /\* // sort input data *\/ */
-	/* qsort(training_samples, LEN_DATA, sizeof(sample), comp_sample); */
-
-	/* /\* fit tree to input data *\/ */
-	/* puts("Fitting..."); */
-	/* grow_tree(tree, 0, training_samples, 0, len_data - 1); // the initial node is 0, and the inital index is 0. */
-
-	/* output result tree data */
-	puts("Fit result:");
-	print_tree(tree, NUM_NODES);
-
-	puts("Prediction");
-	double result[LEN_DATA];
-	predict(tree, NUM_NODES, input_feature, result, len_data);
-
-	print_double_array(result, len_data);
-
-}
-
 void fit(node* tree, sample* training_samples, int len_data){
   qsort(training_samples, len_data, sizeof(sample), comp_sample);
   grow_tree(tree, 0, training_samples, 0, len_data - 1); // the initial node is 0, and the inital index is 0.
 }
-
 
 void predict(node* tree, size_t num_nodes, double* predictor, double* result,
 		size_t num_predictors) {
