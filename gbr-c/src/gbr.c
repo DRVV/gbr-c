@@ -27,6 +27,10 @@ double eval_split(sample* arr, size_t, size_t, size_t);
 #define hoge 10
 
 #define N_ESTIMATORS 3
+#define NUM_TREES N_ESTIMATORS
+
+void init_forest(node forest[][NUM_NODES], size_t, size_t);
+void print_forest(node forest[][NUM_NODES], size_t, size_t);
 
 int main() {
   
@@ -42,15 +46,10 @@ int main() {
   //print_double_array(input_data, len_data);
 
   // initialise nodes
-  node boosting_trees[N_ESTIMATORS][NUM_NODES];
+  node forest[NUM_TREES][NUM_NODES];
+
+  init_forest(forest, NUM_TREES, NUM_NODES);
   
-  node tree[NUM_NODES];
-  init_tree(tree, NUM_NODES);
-
-  ///// debug /////
-  puts("Init nodes:");
-  print_tree(tree, NUM_NODES);
-
   /* // sort input data */
   qsort(training_samples, LEN_DATA, sizeof(sample), comp_sample);
 
@@ -79,5 +78,20 @@ void get_residual(sample* residual, double* predictions, sample* training_sample
   for (i=0; i < num_samples; i++){
     residual[i].feature = training_samples[i].feature;
     residual[i].target = training_samples[i].target - predictions[i];
+  }
+}
+
+void init_forest(node forest[][NUM_NODES], size_t num_trees, size_t num_nodes){
+  size_t i;
+  for (i = 0; i < num_trees; i++) {
+    init_tree(forest[i], num_nodes);
+  }
+}
+
+void print_forest(node forest[][NUM_NODES], size_t num_trees, size_t num_nodes){
+  size_t i;
+  for (i = 0; i < num_trees; i++) {
+    printf("tree number %zu\n", i);
+    print_tree(forest[i], num_nodes);
   }
 }
