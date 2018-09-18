@@ -1,5 +1,5 @@
 /*
- * decision_tree.c
+ * decision_tree.h
  *
  *  Created on: 2018/09/05
  *      Author: sysl1_1704a
@@ -44,6 +44,7 @@ double mean(double* arr, size_t, size_t);
 double mean_target(sample* arr, size_t, size_t);
 double var(double* arr, size_t, size_t);
 double var_target(sample* arr, size_t, size_t);
+double squared_error(sample* arr, size_t, size_t);
 
 // comparetor
 int comparetor(const void*, const void*);
@@ -104,8 +105,8 @@ double eval_split(sample* arr, size_t slice_start, size_t slice,
 		  size_t slice_end) {
   /* calculate each variance*/
   // NOTE: use slice convention
-  double score_left = var_target(arr, slice_start, slice); // arr[slice_start:slice]
-  double score_right = var_target(arr, slice, slice_end); // arr[slice:slice_end]
+  double score_left = squared_error(arr, slice_start, slice);
+  double score_right = squared_error(arr, slice, slice_end);
   // total
   return (score_left + score_right);
 }
@@ -122,13 +123,16 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
     /* find best split */
     // init
     size_t slice_best = slice_start;
-    double score_best = (float) INT_MAX;
+    double score_best = (double) INT_MAX;
 
     // for every possible split, evaluate the score of split
     size_t slice;
-    for (slice = slice_start; slice < slice_end; slice++) {
-      printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
-
+    size_t init_slice = slice_start + MIN_SAMPLES + 1; // the first slice should not be tested
+    size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
+    for (slice = init_slice; slice < last_slice; slice++) {
+      if (arr[slice - 1].feature == arr[slice].feature){
+        continue; // skip a split with the same feature (corresp. removing duplicate in features)
+      }
       // arr -> arr[slice_start:slice], arr[slice:slice_end]
       double score = eval_split(arr, slice_start, slice, slice_end);
       if (score < score_best) {
@@ -136,26 +140,23 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
 	score_best = score;
 	slice_best = slice;
       }
+      printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
     }
 
-    // another stopping condition
-    if ((slice_start == slice_best) || (slice_best == slice_end)){
-      terminalize(&(tree[node_id]), arr, slice_start, slice_end);
-    } else {
-      // set current node (leaf) values
-      tree[node_id].feature = 0; // TODO: special for single feature input
-      tree[node_id].value = arr[slice_best].feature;
-      tree[node_id].is_terminal = false;
+    // set current node (leaf) values
+    tree[node_id].feature = 0; // TODO: special for single feature input
+    tree[node_id].value = arr[slice_best].feature;
+    tree[node_id].is_terminal = false;
 
-      // RECURSION: apply 'grow_tree' against child nodes
+    // RECURSION: apply 'grow_tree' against child nodes
       
-      // LEFT: grow_tree[left_slice_start:left_slice_end]
-      grow_tree(tree, tree[node_id].id_left, arr, slice_start,
-		slice_best);
-      // RIGHT: grow_tree[right_slice_start:right_slice_end]
-      grow_tree(tree, tree[node_id].id_right, arr, slice_best,
-		slice_end);
-    }
+    // LEFT: grow_tree[left_slice_start:left_slice_end]
+    grow_tree(tree, tree[node_id].id_left, arr, slice_start,
+	      slice_best);
+    // RIGHT: grow_tree[right_slice_start:right_slice_end]
+    grow_tree(tree, tree[node_id].id_right, arr, slice_best,
+	      slice_end);
+    
   }
 }
 
@@ -311,6 +312,25 @@ double var_target(sample* arr, size_t slice_start, size_t slice_end) {
   double mean_squared = pow(mean, 2);
   // <X^2> - <X>^2
   return (squared_mean - mean_squared);
+}
+
+double squared_error(sample* arr, size_t slice_start, size_t slice_end){
+  int len = slice_end - slice_start;
+  if (len < 1){
+    printf("Array length is less than 1.  Cannot calculate squared error.\n");
+    return 0;
+  }
+
+  double squared_sum = 0;
+  double sum = 0;
+  size_t i;
+  for (i = slice_start; i < slice_end; i++){
+    squared_sum += pow(arr[i].target, 2);
+    sum += arr[i].target;
+  }
+  double mean = sum / len;
+
+  return squared_sum - len * pow(mean, 2);
 }
 
 void terminalize(node* target_node, sample* arr, size_t slice_start, size_t slice_end){

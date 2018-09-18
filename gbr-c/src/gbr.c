@@ -27,7 +27,7 @@
 #define LEN_DATA 100
 #define BUFFER_SIZE 1024
 
-#define N_ESTIMATORS 100
+#define N_ESTIMATORS 3
 #define NUM_TREES N_ESTIMATORS
 
 #define NUM_FEATURES 1
@@ -82,8 +82,8 @@ int main(int argc, char **argv) {
 
   puts("Fitting...");
 
-  sample residual_samples[LEN_DATA];
-  sample residual_samples_cp[LEN_DATA];
+  sample residual_samples[LEN_DATA] = { 0 };
+  sample residual_samples_cp[LEN_DATA] = { 0 };
   memcpy(residual_samples, training_samples, sizeof(sample) * len_data);
 
   size_t n_tree;
@@ -97,8 +97,13 @@ int main(int argc, char **argv) {
     //halt();
 
     fit(forest[n_tree], residual_samples_cp, len_data);
+
+    print_tree(forest[n_tree], NUM_NODES);
+    fflush(stdout);
     // prediction
+    printf("\n%Iu th tree\n", n_tree);
     predict(forest[n_tree], NUM_NODES, features, pred_by_each_tree, len_data); // find prediction by a tree
+    fflush(stdout);
     //print_tree(forest[n_tree], NUM_NODES);
     //scanf("%d", &a);
 
@@ -110,18 +115,15 @@ int main(int argc, char **argv) {
     //puts("updated prediction");
     //print_double_array(pred, len_data);
 
-    //halt();
+
     // find residual
     update_residual(residual_samples, pred, training_samples, len_data);
 
-    print_samples(residual_samples, len_data);
-    //fflush(stdout);
-    halt();
   }
 
-  puts("Prediction");
-  double result[LEN_DATA];
-  double result_delta[LEN_DATA];
+  //puts("Prediction");
+  double result[LEN_DATA] = {0};
+  double result_delta[LEN_DATA] = {0};
 
   for (n_tree = 0; n_tree < NUM_TREES; n_tree++) {
     predict(forest[n_tree], NUM_NODES, input_feature, result_delta, len_data); // updates result
@@ -130,10 +132,14 @@ int main(int argc, char **argv) {
 
   puts("final prediction:");
 
-  print_double_array(result, len_data);
+  FILE* fp;
+  char* outfile = argv[2];
+  fp = fopen(outfile, "w");
+  fprint_double_array(fp, result, len_data);
+  fclose(fp);
+
   return 0;
 }
-;
 
 void get_residual(sample* residual, double* predictions,
     sample* training_samples, size_t num_samples) {

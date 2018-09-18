@@ -59,10 +59,12 @@ double eval_split(sample* arr, size_t, size_t, size_t);
 
 void fit(node* tree, sample* samples, int);
 void predict(node* tree, size_t, double* predictor, double* result, size_t);
+
 double trace_tree(node* tree, size_t, double predictor);
 
 void print_tree(node tree[], size_t);
 void print_double_array(double arr[], size_t);
+void fprint_double_array(FILE* , double arr[], size_t);
 
 void print_samples(sample samples[], size_t);
 
@@ -70,55 +72,14 @@ void create_training_samples(double*, double*, sample*, size_t);
 
 void terminalize(node*, sample*, size_t, size_t);
 
-#define LEN_DATA 12
-int main() {
-  // dummy data
-  double input_feature[] = { 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 9 };
-  double input_target[] = { 30, 10, 40, 10, 50, 90, 20, 60, 50, 30, 50, 90 };
-  int len_data = 12;
-
-  sample training_samples[LEN_DATA];
-  create_training_samples(input_feature, input_target, training_samples,
-  LEN_DATA);
-  print_samples(training_samples, LEN_DATA);
-  //print_double_array(input_data, len_data);
-
-  // initialise nodes
-  node tree[NUM_NODES ];
-  init_tree(tree, NUM_NODES);
-
-  ///// debug /////
-  puts("Init nodes:");
-  print_tree(tree, NUM_NODES);
-
-  fit(tree, training_samples, len_data);
-  /* /\* // sort input data *\/ */
-  /* qsort(training_samples, LEN_DATA, sizeof(sample), comp_sample); */
-
-  /* /\* fit tree to input data *\/ */
-  /* puts("Fitting..."); */
-  /* grow_tree(tree, 0, training_samples, 0, len_data - 1); // the initial node is 0, and the inital index is 0. */
-
-  /* output result tree data */
-  puts("Fit result:");
-  print_tree(tree, NUM_NODES);
-
-  puts("Prediction");
-  double result[LEN_DATA];
-  predict(tree, NUM_NODES, input_feature, result, len_data);
-
-  print_double_array(result, len_data);
-
-}
-
-void fit(node* tree, sample* training_samples, int len_data) {
+void fit(node* tree, sample* training_samples, int len_data){
   qsort(training_samples, len_data, sizeof(sample), comp_sample);
   grow_tree(tree, 0, training_samples, 0, len_data); // the initial node is 0, and the inital index is 0.
   // NOTE: follow slice notation
 }
 
 void predict(node* tree, size_t num_nodes, double* predictor, double* result,
-    size_t num_predictors) {
+       size_t num_predictors) {
   size_t i;
   for (i = 0; i < num_predictors; i++) {
     result[i] = trace_tree(tree, 0, predictor[i]); // start from root node
@@ -142,18 +103,17 @@ double trace_tree(node* tree, size_t node_id, double predictor) {
 }
 
 double eval_split(sample* arr, size_t slice_start, size_t slice,
-    size_t slice_end) {
+		  size_t slice_end) {
   /* calculate each variance*/
   // NOTE: use slice convention
   double score_left = squared_error(arr, slice_start, slice);
   double score_right = squared_error(arr, slice, slice_end);
-
   // total
   return (score_left + score_right);
 }
 
 void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
-    size_t slice_end) {
+         size_t slice_end) {
 
   // node* current_node = &tree[node_id];
   // check stopping condition
@@ -164,7 +124,7 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
     /* find best split */
     // init
     size_t slice_best = slice_start;
-    double score_best = (double) INT_MAX;
+    double score_best = (float) INT_MAX;
 
     // for every possible split, evaluate the score of split
     size_t slice;
@@ -177,14 +137,13 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
       // arr -> arr[slice_start:slice], arr[slice:slice_end]
       double score = eval_split(arr, slice_start, slice, slice_end);
       if (score < score_best) {
-        // update if current score wins
-        score_best = score;
-        slice_best = slice;
+	// update if current score wins
+	score_best = score;
+	slice_best = slice;
       }
-      printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
+      // printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
     }
 
-    // another stopping condition
     // set current node (leaf) values
     tree[node_id].feature = 0; // TODO: special for single feature input
     tree[node_id].value = arr[slice_best].feature;
@@ -192,19 +151,19 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
 
     // RECURSION: apply 'grow_tree' against child nodes
 
-    // LEFT: grow_tree[slice_start:slice_best]
+    // LEFT: grow_tree[left_slice_start:left_slice_end]
     grow_tree(tree, tree[node_id].id_left, arr, slice_start,
 	      slice_best);
     // RIGHT: grow_tree[right_slice_start:right_slice_end]
     grow_tree(tree, tree[node_id].id_right, arr, slice_best,
 	      slice_end);
-
+ 
   }
 }
 
 bool grow_should_stop(size_t node_id, size_t slice_start, size_t slice_end) {
   // stopping conditions
-  bool chk_depth = (find_depth(node_id) > MAX_DEPTH); // depth exceeds max
+  bool chk_depth = (find_depth(node_id) >= MAX_DEPTH); // depth exceeds max
 
   int len = slice_end - slice_start;
   bool chk_len = (len <= (MIN_SAMPLES + 1)); // array size is less than or equal to min+1
@@ -229,7 +188,7 @@ void init_tree(node* tree, size_t num_nodes) {
 }
 
 void create_training_samples(double* features, double* targets, sample* samples,
-    size_t len) {
+           size_t len) {
   size_t i;
   for (i = 0; i < len; i++) {
     samples[i].feature = features[i];
@@ -242,9 +201,9 @@ void print_tree(node tree[], size_t len) {
   printf("{tree: \n[");
   for (i = 0; i < len; i++) {
     printf(
-        "{id: %Iu, id_left: %Iu, id_right: %Iu, feature: %d, value: %.3f, is_terminal: %d}",
-        tree[i].id, tree[i].id_left, tree[i].id_right, tree[i].feature,
-        tree[i].value, tree[i].is_terminal);
+     "{id: %Iu, id_left: %Iu, id_right: %Iu, feature: %d, value: %.3f, is_terminal: %d}",
+     tree[i].id, tree[i].id_left, tree[i].id_right, tree[i].feature,
+     tree[i].value, tree[i].is_terminal);
     // final comma should not appear
     if (i == len - 1) {
       printf("\n");
@@ -258,10 +217,18 @@ void print_tree(node tree[], size_t len) {
 void print_double_array(double arr[], size_t len) {
   size_t i;
   for (i = 0; i < len; i++) {
-    printf("%.3f, ", (double) arr[i]);
+    printf("%.3f, \n", (double) arr[i]);
   }
-  printf("\n");
+  //printf("\n");
 }
+
+void fprint_double_array(FILE* fp, double arr[], size_t len) {
+  size_t i;
+  for (i = 0; i < len; i++){
+    fprintf(fp, "%.6f, \n", (double) arr[i]);
+  }
+}
+
 
 void print_samples(sample samples[], size_t len) {
   size_t i;
@@ -336,8 +303,8 @@ double mean_target(sample* arr, size_t slice_start, size_t slice_end) {
 double var_target(sample* arr, size_t slice_start, size_t slice_end) {
   int len = slice_end - slice_start;
   if (len < 1) {
-    printf("Array length is less than 1.  Cannot calculate variance.\n");
-    return 0; //arr[0].target;
+    //printf("Array length is less than 1.  Cannot calculate variance.\n");
+    return 0;//arr[0].target;
   }
   double squared = 0;
   double mean = 0;
@@ -376,8 +343,7 @@ double squared_error(sample* arr, size_t slice_start, size_t slice_end){
 }
 
 
-void terminalize(node* target_node, sample* arr, size_t slice_start,
-    size_t slice_end) {
+void terminalize(node* target_node, sample* arr, size_t slice_start, size_t slice_end){
   (*target_node).is_terminal = true;
   (*target_node).value = mean_target(arr, slice_start, slice_end);
 }
