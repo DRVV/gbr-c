@@ -3,6 +3,8 @@
  *
  *  Created on: 2018/09/05
  *      Author: sysl1_1704a
+ * 
+ *  multi dimensional feature
  */
 
 #include <stdio.h>
@@ -15,12 +17,31 @@
 #define NUM_NODES (int)(pow(2, MAX_DEPTH+1) - 1)
 #define MIN_SAMPLES 2
 
+// training data format
+#define NUM_FEATURES 2
+#define DIM_FEATURES NUM_FEATURES
+
 #define DEFAULT_FEATURE -1
 #define DEFAULT_VALUE -1.000
 
+// dummy data spec
+#define LEN_DATA 12
+#define ROW 2
+#define COL LEN_DATA
+#define NUM_SAMPLES LEN_DATA
+
+// dummy data
+double input_features[ROW][COL] = {
+  { 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 9 },
+  //  { 9, 7, 9, 3, 2, 3, 8, 4, 6, 2, 6, 4}
+  { 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1}
+};
+double input_target[] = { 30, 10, 40, 10, 50, 90, 20, 60, 50, 30, 50, 90 };
+int len_data = 12;
+
 /* structs */
 typedef struct {
-  double feature;
+  double features[NUM_FEATURES];
   double target;
 } sample;
 
@@ -28,7 +49,7 @@ typedef struct {
   size_t id;
   size_t id_left;
   size_t id_right;
-  int feature;
+  int feature; // feature index (for multi dimensional features)
   double value;
   bool is_terminal;
 } node;
@@ -66,25 +87,22 @@ void print_double_array(double arr[], size_t);
 
 void print_samples(sample samples[], size_t);
 
-void create_training_samples(double*, double*, sample*, size_t);
+void create_training_samples(double(*)[NUM_SAMPLES], double*, sample*, size_t);
 
 void terminalize(node*, sample*, size_t, size_t);
 
-#define LEN_DATA 12
-int main() {
-  // dummy data
-  double input_feature[] = { 3, 1, 4, 1, 5, 9, 2, 6, 5, 3, 5, 9 };
-  double input_target[] = { 30, 10, 40, 10, 50, 90, 20, 60, 50, 30, 50, 90 };
-  int len_data = 12;
+// GLOBAL VARIABLE USED BY 'comp_sapmle' //
+extern int comp_feat_dim;
 
+
+int main() {
   sample training_samples[LEN_DATA];
-  create_training_samples(input_feature, input_target, training_samples,
-  LEN_DATA);
+  create_training_samples(input_features, input_target, training_samples, LEN_DATA);
   print_samples(training_samples, LEN_DATA);
   //print_double_array(input_data, len_data);
 
   // initialise nodes
-  node tree[NUM_NODES ];
+  node tree[NUM_NODES];
   init_tree(tree, NUM_NODES);
 
   ///// debug /////
@@ -105,20 +123,19 @@ int main() {
 
   puts("Prediction");
   double result[LEN_DATA];
-  predict(tree, NUM_NODES, input_feature, result, len_data);
+  predict(tree, NUM_NODES, input_features, result, len_data);
 
   print_double_array(result, len_data);
 
 }
 
 void fit(node* tree, sample* training_samples, int len_data) {
-  qsort(training_samples, len_data, sizeof(sample), comp_sample);
   grow_tree(tree, 0, training_samples, 0, len_data); // the initial node is 0, and the inital index is 0.
   // NOTE: follow slice notation
 }
 
-void predict(node* tree, size_t num_nodes, double* predictor, double* result,
-    size_t num_predictors) {
+void predict(node* tree, size_t num_nodes, double predictor[ROW][COL], double* result,
+	     size_t num_predictors) {
   size_t i;
   for (i = 0; i < num_predictors; i++) {
     result[i] = trace_tree(tree, 0, predictor[i]); // start from root node
@@ -142,7 +159,7 @@ double trace_tree(node* tree, size_t node_id, double predictor) {
 }
 
 double eval_split(sample* arr, size_t slice_start, size_t slice,
-    size_t slice_end) {
+		  size_t slice_end) {
   /* calculate each variance*/
   // NOTE: use slice convention
   double score_left = squared_error(arr, slice_start, slice);
@@ -153,7 +170,7 @@ double eval_split(sample* arr, size_t slice_start, size_t slice,
 }
 
 void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
-    size_t slice_end) {
+	       size_t slice_end) {
 
   // node* current_node = &tree[node_id];
   // check stopping condition
@@ -162,43 +179,49 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
     return;
   } else {
     /* find best split */
+
+    //// MODIFY GLOBAL VAR ////
+    size_t feat_dim;
     // init
     size_t slice_best = slice_start;
     double score_best = (double) INT_MAX;
+    size_t dim_best = 0;
 
-    // for every possible split, evaluate the score of split
-    size_t slice;
-    size_t init_slice = slice_start + MIN_SAMPLES + 1; // the first slice should not be tested
-    size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
-    for (slice = init_slice; slice < last_slice; slice++) {
-      if (arr[slice - 1].feature == arr[slice].feature){
-        continue; // skip a split with the same feature (corresp. removing duplicate in features)
+    for (feat_dim = 0; feat_dim < DIM_FEATURES; feat_dim++){
+      comp_feat_dim = feat_dim;  // GLOBAL VARIABLE USED BY 'comp_sample'
+      qsort(training_samples, len_data, sizeof(sample), comp_sample);
+
+      // for every possible split, evaluate the score of split
+      size_t slice;
+      size_t init_slice = slice_start + MIN_SAMPLES; // the first slice should not be tested
+      size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
+      for (slice = init_slice; slice < last_slice; slice++) {
+	if (arr[slice - 1].features[feat_dim] == arr[slice].features[feat_dim]){
+	  continue; // skip a split with the same feature (corresp. removing duplicate in features)
+	}
+	// arr -> arr[slice_start:slice], arr[slice:slice_end]
+	double score = eval_split(arr, slice_start, slice, slice_end);
+
+	// update the score is better
+	if (score < score_best) {
+	  score_best = score;
+	  slice_best = slice;
+	  dim_best = feat_dim;
+	}
+	printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
       }
-      // arr -> arr[slice_start:slice], arr[slice:slice_end]
-      double score = eval_split(arr, slice_start, slice, slice_end);
-      if (score < score_best) {
-        // update if current score wins
-        score_best = score;
-        slice_best = slice;
-      }
-      printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
     }
-
-    // another stopping condition
     // set current node (leaf) values
-    tree[node_id].feature = 0; // TODO: special for single feature input
+    tree[node_id].feature = dim_best;
     tree[node_id].value = arr[slice_best].feature;
     tree[node_id].is_terminal = false;
 
     // RECURSION: apply 'grow_tree' against child nodes
 
     // LEFT: grow_tree[slice_start:slice_best]
-    grow_tree(tree, tree[node_id].id_left, arr, slice_start,
-	      slice_best);
+    grow_tree(tree, tree[node_id].id_left, arr, slice_start, slice_best);
     // RIGHT: grow_tree[right_slice_start:right_slice_end]
-    grow_tree(tree, tree[node_id].id_right, arr, slice_best,
-	      slice_end);
-
+    grow_tree(tree, tree[node_id].id_right, arr, slice_best, slice_end);
   }
 }
 
@@ -228,12 +251,14 @@ void init_tree(node* tree, size_t num_nodes) {
   }
 }
 
-void create_training_samples(double* features, double* targets, sample* samples,
-    size_t len) {
-  size_t i;
+void create_training_samples(double (*features)[NUM_SAMPLES], double* targets, sample* samples,
+			     size_t len) {
+  size_t i, dim;
   for (i = 0; i < len; i++) {
-    samples[i].feature = features[i];
-    samples[i].target = targets[i];
+    for (dim = 0; dim < DIM_FEATURES; dim++){
+      samples[i].features[dim] = features[dim][i];
+      samples[i].target = targets[i];
+    }
   }
 }
 
@@ -242,9 +267,9 @@ void print_tree(node tree[], size_t len) {
   printf("{tree: \n[");
   for (i = 0; i < len; i++) {
     printf(
-        "{id: %Iu, id_left: %Iu, id_right: %Iu, feature: %d, value: %.3f, is_terminal: %d}",
-        tree[i].id, tree[i].id_left, tree[i].id_right, tree[i].feature,
-        tree[i].value, tree[i].is_terminal);
+	   "{id: %Iu, id_left: %Iu, id_right: %Iu, feature: %d, value: %.3f, is_terminal: %d}",
+	   tree[i].id, tree[i].id_left, tree[i].id_right, tree[i].feature,
+	   tree[i].value, tree[i].is_terminal);
     // final comma should not appear
     if (i == len - 1) {
       printf("\n");
@@ -263,33 +288,28 @@ void print_double_array(double arr[], size_t len) {
   printf("\n");
 }
 
-void print_samples(sample samples[], size_t len) {
-  size_t i;
-  printf("(feature, target)\n");
-  for (i = 0; i < len; i++) {
-    printf("(%.3f, %.3f),\n", samples[i].feature, samples[i].target);
+void print_samples(sample samples[], size_t num_samples) {
+  size_t i, dim;
+  printf("([feature], target)\n");
+  for (i = 0; i < num_samples; i++) {
+    printf("%Iu: ([", i);
+    for (dim =0; dim < DIM_FEATURES; dim++){
+      printf("%.3f,", samples[i].features[dim]);
+    }
+    printf("], %.3f)\n", samples[i].target);
   }
 }
 
 // for qsort
-int comparetor(const void* a, const void* b) {
-  double aa = *(double*) a;
-  double bb = *(double*) b;
-  if (aa > bb)
-    return 1;
-  else if (aa < bb)
-    return -1;
-  else
-    return 0;
-}
 
 int comp_sample(const void* a, const void* b) {
+  /* +++++NOTE: GLOBAL VARIABLE 'comp_feat_dim' +++++ */
   sample aa = *(sample*) a;
   sample bb = *(sample*) b;
 
-  if (aa.feature > bb.feature)
+  if (aa.features[comp_feat_dim] > bb.features[comp_feat_dim])
     return 1;
-  else if (aa.feature < bb.feature)
+  else if (aa.features[comp_feat_dim] < bb.features[comp_feat_dim])
     return -1;
   else
     return 0;
@@ -377,7 +397,7 @@ double squared_error(sample* arr, size_t slice_start, size_t slice_end){
 
 
 void terminalize(node* target_node, sample* arr, size_t slice_start,
-    size_t slice_end) {
+		 size_t slice_end) {
   (*target_node).is_terminal = true;
   (*target_node).value = mean_target(arr, slice_start, slice_end);
 }
