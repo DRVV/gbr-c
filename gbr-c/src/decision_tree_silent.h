@@ -1,5 +1,5 @@
 /*
- * decision_tree.c
+ * decision_tree_silent.h
  *
  *  Created on: 2018/09/05
  *      Author: sysl1_1704a
@@ -124,12 +124,12 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
     /* find best split */
     // init
     size_t slice_best = slice_start;
-    double score_best = (float) INT_MAX;
+    double score_best = (double) INT_MAX;
 
     // for every possible split, evaluate the score of split
     size_t slice;
-    size_t init_slice = slice_start + MIN_SAMPLES + 1; // the first slice should not be tested
-    size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
+    size_t init_slice = slice_start + MIN_SAMPLES; // the first slice should not be tested
+    size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice (add by 1 due to loop condition)
     for (slice = init_slice; slice < last_slice; slice++) {
       if (arr[slice - 1].feature == arr[slice].feature){
         continue; // skip a split with the same feature (corresp. removing duplicate in features)

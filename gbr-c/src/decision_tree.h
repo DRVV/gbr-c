@@ -127,7 +127,7 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t slice_start,
 
     // for every possible split, evaluate the score of split
     size_t slice;
-    size_t init_slice = slice_start + MIN_SAMPLES + 1; // the first slice should not be tested
+    size_t init_slice = slice_start + MIN_SAMPLES; // the first slice should not be tested
     size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
     for (slice = init_slice; slice < last_slice; slice++) {
       if (arr[slice - 1].feature == arr[slice].feature){

@@ -27,7 +27,7 @@
 #define LEN_DATA 100
 #define BUFFER_SIZE 1024
 
-#define N_ESTIMATORS 3
+#define N_ESTIMATORS 100
 #define NUM_TREES N_ESTIMATORS
 
 #define NUM_FEATURES 1
