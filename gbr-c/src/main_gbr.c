@@ -23,7 +23,7 @@
 
 #include "for_debug.h"
 
-
+void init_samples(sample*, size_t len, size_t num_features);
 
 int main(int argc, char **argv) {
   /* IO (using malloc) */
@@ -40,6 +40,8 @@ int main(int argc, char **argv) {
   int n_features = n_cols - DIM_TARGETS;
   sample* training_samples = make_samples_from_csv(path);
   print_samples(training_samples, n_rows, n_features);
+
+  halt();
   /* IO END */
   
   double** input_features = malloc(n_rows * sizeof(double*));
@@ -49,26 +51,41 @@ int main(int argc, char **argv) {
   node forest[NUM_TREES][NUM_NODES];
   init_forest(forest, NUM_TREES, NUM_NODES);
 
+  // print_forest(forest, NUM_TREES, NUM_NODES);
+  // halt();
+
   // sort input data
   qsort(training_samples, len_data, sizeof(sample), comp_sample);
+
+  print_samples(training_samples, n_rows, n_features);
 
   // initialize prediction result
 
   puts("Fitting...");
 
   //sample residual_samples[LEN_DATA] = { 0 };
-  sample* residual_samples = malloc(sizeof(sample) * len_data);
+  sample* residual_samples = malloc(len_data * sizeof(sample));
+  sample* residual_samples_cp = malloc(len_data * sizeof(sample));
 
-  double* pred = malloc(sizeof(double) * len_data);
-  double* pred_by_each_tree = malloc(sizeof(double) * len_data);
-  sample* residual_samples_cp = malloc(sizeof(sample) * len_data);
+  init_samples(residual_samples, n_rows, n_features);
+  init_samples(residual_samples_cp, n_rows, n_features);
+
+//  residual_samples = {0};
+
+  double* pred = calloc(len_data, sizeof(double));
+  double* pred_by_each_tree = calloc(len_data, sizeof(double));
+
   
-  gbr_fit(forest, NUM_TREES, NUM_NODES, residual_samples, len_data, pred, pred_by_each_tree, residual_samples_cp, input_features);
+  printf("all malloc done\n");
+  halt();
+
+  gbr_fit(forest, NUM_TREES, NUM_NODES, residual_samples, training_samples, len_data, pred, pred_by_each_tree, residual_samples_cp, input_features, n_features);
   
   puts("Prediction");
   //double result[LEN_DATA] = {0};
-  double* result = malloc(sizeof(double) * len_data);
-  double* result_delta = malloc(sizeof(double) * len_data);
+  double* result = calloc(len_data, sizeof(double));
+  double* result_delta = calloc(len_data, sizeof(double));
+
   gbr_predict(forest, NUM_TREES, NUM_NODES, input_features, result, result_delta, len_data);
   puts("final prediction:");
 
@@ -80,4 +97,12 @@ int main(int argc, char **argv) {
   fclose(fp);
 
   return 0;
+}
+
+void init_samples(sample* smps, size_t len, size_t n_features){
+  size_t i;
+  for (i=0; i<len; i++){
+    smps[i].features = calloc(n_features, sizeof(double));
+    smps[i].target = 0;
+  }
 }

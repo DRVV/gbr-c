@@ -20,20 +20,22 @@
 #include "misc.h"
 
 #include "gbr.h"
+#include "for_debug.h"
 
-void gbr_fit(node forest[][NUM_TREES], size_t n_trees, size_t n_nodes, sample* residual_samples, size_t len_data, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features){
+void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features){
   /* double pred[LEN_DATA] = { 0 }; */
   /* double pred_by_each_tree[LEN_DATA] = { 0 }; */
   /* sample residual_samples_cp[LEN_DATA] = {0}; */
-  
+  residual_samples = training_samples;
   size_t n_tree;
   for (n_tree = 0; n_tree < n_trees; n_tree++) {
     // fit tree
     memcpy(residual_samples_cp, residual_samples, sizeof(sample) * len_data);
 
-    fit(forest[n_tree], residual_samples_cp, len_data);
+    fit(forest[n_tree], residual_samples_cp, len_data, n_features);
 
-    //print_tree(forest[n_tree], n_nodes);
+    print_tree(forest[n_tree], n_nodes);
+    halt();
     // prediction
     //printf("\n%Iu th tree\n", n_tree);
     predict(forest[n_tree], n_nodes, features, pred_by_each_tree, len_data); // find prediction by a tree
@@ -43,8 +45,9 @@ void gbr_fit(node forest[][NUM_TREES], size_t n_trees, size_t n_nodes, sample* r
   }
 }
 
-void gbr_predict(node forest[][NUM_TREES], size_t n_trees, size_t n_nodes, double** features, double* result, double* result_delta, size_t len_data){
+void gbr_predict(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, double** features, double* result, double* result_delta, size_t len_data){
   //double result_delta[LEN_DATA] = {0};
+  size_t n_tree;
   for (n_tree = 0; n_tree < n_trees; n_tree++) {
     predict(forest[n_tree], n_nodes, features, result_delta, len_data); // updates result
     update_prediction(result, result_delta, len_data); // result -> result + result_delta
@@ -54,15 +57,8 @@ void gbr_predict(node forest[][NUM_TREES], size_t n_trees, size_t n_nodes, doubl
 void get_residual(sample* residual, double* predictions, sample* training_samples, size_t num_samples) {
   size_t i;
   for (i = 0; i < num_samples; i++) {
-    residual[i].feature = training_samples[i].feature;
+    residual[i].features = training_samples[i].features;
     residual[i].target = training_samples[i].target - predictions[i];
-  }
-}
-
-void get_features(double* features, sample* samples, size_t len_data) {
-  size_t i;
-  for (i = 0; i < len_data; i++) {
-    features[i] = samples[i].feature;
   }
 }
 
@@ -95,3 +91,4 @@ void print_forest(node forest[][NUM_NODES], size_t num_trees, size_t num_nodes) 
     printf("tree number %Iu\n", i);
     print_tree(forest[i], num_nodes);
   }
+}

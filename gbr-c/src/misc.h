@@ -5,5 +5,6 @@
 
 double log2(double);
 void print_double_array(double* arr, size_t len);
+void fprint_double_array(FILE* fp, double arr[], size_t len);
 
 #endif
