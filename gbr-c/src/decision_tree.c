@@ -13,42 +13,15 @@
 #include <math.h>
 #include <limits.h>
 
-#include "csv_reader.h"
+#include "sample.h"
+#include "decision_tree.h"
+#include "misc.h"
+
 #include "for_debug.h"
-//#include "structs.h" <- csv_reader.h includes this
-
-// tree parameters
-#define MAX_DEPTH 3
-#define NUM_NODES (int)(pow(2, MAX_DEPTH+1) - 1)
-#define MIN_SAMPLES 2
-
-// training data format
-/* #define NUM_FEATURES 1 */
-/* #define DIM_FEATURES NUM_FEATURES  <-- defined for later use*/ 
-
-#define DEFAULT_FEATURE -1
-#define DEFAULT_VALUE -1.000
-
-typedef struct {
-  size_t id;
-  size_t id_left;
-  size_t id_right;
-  int feature; // feature index (for multi dimensional features)
-  double value;
-  bool is_terminal;
-} node;
-
-/* prototypes */
-
-// GLOBAL VARIABLE USED BY 'comp_sapmle' //
-int comp_feat_dim = 0;
-
-
-
 
 void fit(node* tree, sample* training_samples, size_t len_data, size_t n_features) {
+  // NOTE: grow_tree for training_samples[0:len_data]
   grow_tree(tree, 0, training_samples, len_data, n_features, 0, len_data); // the initial node is 0, and the inital index is 0.
-  // NOTE: follow slice notation
 }
 
 void predict(node* tree, size_t num_nodes, double** predictors, double* result, size_t n_predictors) {
@@ -77,36 +50,32 @@ double trace_tree(node* tree, size_t node_id, double* predictor) {
 
 double eval_split(sample* arr, size_t slice_start, size_t slice, size_t slice_end) {
   /* calculate each variance*/
-  // NOTE: use slice convention
-  double score_left = squared_error(arr, slice_start, slice);
-  double score_right = squared_error(arr, slice, slice_end);
+  double score_left = squared_error(arr, slice_start, slice); // squared_error for arr[slice_start:slice]
+  double score_right = squared_error(arr, slice, slice_end); // squared_error for arr[slice:slice_end]
 
-  // total
+  // total score
   return (score_left + score_right);
 }
 
 void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t dim_features, size_t slice_start, size_t slice_end) {
-
-  // node* current_node = &tree[node_id];
   // check stopping condition
   if (grow_should_stop(node_id, slice_start, slice_end)) {
     terminalize(&(tree[node_id]), arr, slice_start, slice_end);
     return;
   } else {
     /* find best split */
-
-    //// MODIFY GLOBAL VAR ////
     size_t feat_dim;
     // init
     size_t slice_best = slice_start;
     double score_best = (double) INT_MAX;
     size_t dim_best = 0;
 
+    // for every possible split, evaluate the score of split
     for (feat_dim = 0; feat_dim < dim_features; feat_dim++){
-      comp_feat_dim = feat_dim;  // GLOBAL VARIABLE USED BY 'comp_sample'
+      extern size_t comp_feat_dim;
+      comp_feat_dim = feat_dim;  // MODIFYING GLOBAL VARIABLE USED BY 'comp_sample'
       qsort(arr, len_data, sizeof(sample), comp_sample);
 
-      // for every possible split, evaluate the score of split
       size_t slice;
       size_t init_slice = slice_start + MIN_SAMPLES; // the first slice should not be tested
       size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
@@ -114,7 +83,7 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t 
 	if (arr[slice - 1].features[feat_dim] == arr[slice].features[feat_dim]){
 	  continue; // skip a split with the same feature (corresp. removing duplicate in features)
 	}
-	// arr -> arr[slice_start:slice], arr[slice:slice_end]
+	// split arr into arr[slice_start:slice] and arr[slice:slice_end]
 	double score = eval_split(arr, slice_start, slice, slice_end);
 
 	// update the score is better
@@ -131,11 +100,12 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t 
     tree[node_id].value = arr[slice_best].features[dim_best];
     tree[node_id].is_terminal = false;
 
-    // RECURSION: apply 'grow_tree' against child nodes
+    // RECURSION: 'grow_tree' against child nodes
 
-    // LEFT: grow_tree[slice_start:slice_best]
+    // LEFT: arr[slice_start:slice_best]
     grow_tree(tree, tree[node_id].id_left, arr, len_data, dim_features, slice_start, slice_best);
-    // RIGHT: grow_tree[right_slice_start:right_slice_end]
+
+    // RIGHT: arr[right_slice_start:right_slice_end]
     grow_tree(tree, tree[node_id].id_right, arr, len_data, dim_features, slice_best, slice_end);
   }
 }
@@ -184,28 +154,7 @@ void print_tree(node tree[], size_t len) {
   printf("]}\n");
 }
 
-void print_double_array(double arr[], size_t len) {
-  size_t i;
-  for (i = 0; i < len; i++) {
-    printf("%.6f, ", (double) arr[i]);
-  }
-  printf("\n");
-}
-
-// for qsort
-
-int comp_sample(const void* a, const void* b) {
-  /* +++++NOTE: GLOBAL VARIABLE 'comp_feat_dim' +++++ */
-  sample aa = *(sample*) a;
-  sample bb = *(sample*) b;
-
-  if (aa.features[comp_feat_dim] > bb.features[comp_feat_dim])
-    return 1;
-  else if (aa.features[comp_feat_dim] < bb.features[comp_feat_dim])
-    return -1;
-  else
-    return 0;
-}
+// node operations
 
 int find_left(int i) {
   return 2 * i + 1;
@@ -219,84 +168,8 @@ int find_depth(int i) {
   return (int) floor(log2(i + 1));
 }
 
-double log2(double x) {
-  return log(x) / log(2);
-}
-
-double mean(double* arr, size_t slice_start, size_t slice_end) {
-  double mean = 0;
-  double len = slice_end - slice_start;
-  size_t i = 0;
-  for (i = slice_start; i <= slice_end; i++) {
-    mean += arr[i];
-  }
-  mean = mean / len;
-  return mean;
-}
-
-double mean_target(sample* arr, size_t slice_start, size_t slice_end) {
-  double mean = 0;
-  double len = slice_end - slice_start;
-  size_t i = 0;
-  for (i = slice_start; i < slice_end; i++) {
-    mean += arr[i].target;
-  }
-  mean = mean / len;
-  return mean;
-}
-
-double var_target(sample* arr, size_t slice_start, size_t slice_end) {
-  int len = slice_end - slice_start;
-  if (len < 1) {
-    printf("Array length is less than 1.  Cannot calculate variance.\n");
-    return 0; //arr[0].target;
-  }
-  double squared = 0;
-  double mean = 0;
-
-  size_t i;
-  for (i = slice_start; i < slice_end; i++) {
-    //printf("%.3f\n", arr[i]);
-    squared += pow(arr[i].target, 2);
-    mean += arr[i].target;
-  }
-  mean = mean / len;
-
-  double squared_mean = squared / len;
-  double mean_squared = pow(mean, 2);
-  // <X^2> - <X>^2
-  return (squared_mean - mean_squared);
-}
-
-double squared_error(sample* arr, size_t slice_start, size_t slice_end){
-  int len = slice_end - slice_start;
-  if (len < 1){
-    printf("Array length is less than 1.  Cannot calculate squared error.\n");
-    return 0;
-  }
-
-  double squared_sum = 0;
-  double sum = 0;
-  size_t i;
-  for (i = slice_start; i < slice_end; i++){
-    squared_sum += pow(arr[i].target, 2);
-    sum += arr[i].target;
-  }
-  double mean = sum / len;
-
-  return squared_sum - len * pow(mean, 2);
-}
-
-
 void terminalize(node* target_node, sample* arr, size_t slice_start,
 		 size_t slice_end) {
   (*target_node).is_terminal = true;
   (*target_node).value = mean_target(arr, slice_start, slice_end);
-}
-
-void get_features(sample* smps, size_t n_samples, double** parr){
-  size_t i;
-  for (i=0; i<n_samples; i++){
-    parr[i] = smps[i].features;
-  }
 }

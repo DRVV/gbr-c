@@ -1,8 +1,18 @@
 #include <stdio.h>
+#include <stddef.h>
+
+#include <stdlib.h>  // for 'malloc'
+
+#include "for_debug.h"
+#include "misc.h"
+#include "sample.h"
+#include "csv_reader.h"
 #include "decision_tree.h"
 
+
 int main(int argc, char** argv) {
-  
+
+  /* IO (using malloc) */
   char* path = argv[1];
   FILE* fp = fopen(path, "r");
   shape shp = shape_of(fp);
@@ -16,11 +26,12 @@ int main(int argc, char** argv) {
   int n_features = n_cols - DIM_TARGETS;
   sample* training_samples = make_samples_from_csv(path);
   print_samples(training_samples, n_rows, n_features);
-
+  /* IO END */
+  
   double** input_features = malloc(n_rows * sizeof(double*));
   get_features(training_samples, n_rows, input_features);
 
-  // initialise nodes
+  // initialise tree
   node tree[NUM_NODES];
   init_tree(tree, NUM_NODES);
 
