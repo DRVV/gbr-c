@@ -80,19 +80,19 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t 
       size_t init_slice = slice_start + MIN_SAMPLES; // the first slice should not be tested
       size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
       for (slice = init_slice; slice < last_slice; slice++) {
-	if (arr[slice - 1].features[feat_dim] == arr[slice].features[feat_dim]){
-	  continue; // skip a split with the same feature (corresp. removing duplicate in features)
-	}
-	// split arr into arr[slice_start:slice] and arr[slice:slice_end]
-	double score = eval_split(arr, slice_start, slice, slice_end);
+        if (arr[slice - 1].features[feat_dim] == arr[slice].features[feat_dim]){
+          continue; // skip a split with the same feature (corresp. removing duplicate in features)
+        }
+        // split arr into arr[slice_start:slice] and arr[slice:slice_end]
+        double score = eval_split(arr, slice_start, slice, slice_end);
 
-	// update the score is better
-	if (score < score_best) {
-	  score_best = score;
-	  slice_best = slice;
-	  dim_best = feat_dim;
-	}
-	//printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
+        // update the score is better
+        if (score < score_best) {
+          score_best = score;
+          slice_best = slice;
+          dim_best = feat_dim;
+        }
+        //printf("current best slice, score: %Iu, %.3f\n", slice_best, score_best);
       }
     }
     // set current node (leaf) values

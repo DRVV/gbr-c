@@ -20,7 +20,7 @@
 /* #define DIM_FEATURES NUM_FEATURES  <-- defined for later use*/ 
 
 #define DEFAULT_FEATURE -1
-#define DEFAULT_VALUE -1.000
+#define DEFAULT_VALUE -84.3
 
 typedef struct {
   size_t id;

@@ -26,7 +26,8 @@ void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* r
   /* double pred[LEN_DATA] = { 0 }; */
   /* double pred_by_each_tree[LEN_DATA] = { 0 }; */
   /* sample residual_samples_cp[LEN_DATA] = {0}; */
-  residual_samples = training_samples;
+  // residual_samples = training_samples;
+  memcpy(residual_samples, training_samples, sizeof(sample) * len_data);
   size_t n_tree;
   for (n_tree = 0; n_tree < n_trees; n_tree++) {
     // fit tree

@@ -10,7 +10,7 @@
 #define N_ESTIMATORS 100
 #define NUM_TREES N_ESTIMATORS
 
-#define NUM_FEATURES 1
+#define NUM_FEATURES 2
 #define NUM_TARGETS 1
 
 void init_forest(node forest[][NUM_NODES], size_t, size_t);
