@@ -12,7 +12,7 @@
 #include <limits.h>
 
 #include <string.h>
-#include <unistd.h>
+// #include <unistd.h>
 
 #include "sample.h"
 #include "csv_reader.h"
@@ -39,9 +39,9 @@ int main(int argc, char **argv) {
 
   int n_features = n_cols - DIM_TARGETS;
   sample* training_samples = make_samples_from_csv(path);
-  print_samples(training_samples, n_rows, n_features);
+  // print_samples(training_samples, n_rows, n_features);
 
-  halt();
+  // halt();
   /* IO END */
   
   double** input_features = malloc(n_rows * sizeof(double*));
@@ -55,9 +55,9 @@ int main(int argc, char **argv) {
   // halt();
 
   // sort input data
-  qsort(training_samples, len_data, sizeof(sample), comp_sample);
+  // qsort(training_samples, len_data, sizeof(sample), comp_sample);
 
-  print_samples(training_samples, n_rows, n_features);
+  // print_samples(training_samples, n_rows, n_features);
 
   // initialize prediction result
 

@@ -13,7 +13,7 @@
 #include <limits.h>
 
 #include <string.h>
-#include <unistd.h>
+// #include <unistd.h>
 
 #include "sample.h"
 #include "decision_tree.h"
@@ -33,10 +33,19 @@ void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* r
     // fit tree
     memcpy(residual_samples_cp, residual_samples, sizeof(sample) * len_data);
 
+    char file_number[] = "xxx";
+    char outfile[100] = "residuals_";
+    itoa(n_tree, file_number, 10);
+    strcat(outfile, file_number);
+    strcat(outfile, ".csv");
+
+    fprint_samples(outfile, residual_samples_cp, len_data, n_features);
+
     fit(forest[n_tree], residual_samples_cp, len_data, n_features);
 
     print_tree(forest[n_tree], n_nodes);
-    halt();
+    // halt();
+    fflush(stdout);
     // prediction
     //printf("\n%Iu th tree\n", n_tree);
     predict(forest[n_tree], n_nodes, features, pred_by_each_tree, len_data); // find prediction by a tree

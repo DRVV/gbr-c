@@ -12,7 +12,7 @@
 
 // tree parameters
 #define MAX_DEPTH 3
-#define NUM_NODES (int)(pow(2, MAX_DEPTH+1) - 1)
+#define NUM_NODES 15 // (int)(pow(2, MAX_DEPTH+1) - 1)
 #define MIN_SAMPLES 2
 
 // training data format

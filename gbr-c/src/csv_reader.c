@@ -1,7 +1,8 @@
 /* 'malloc' is used */
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
+// #include <unistd.h>
+#include <io.h>
 #include <assert.h>
 
 #include "csv_reader.h"
@@ -46,10 +47,10 @@ void print_pparr(double** arr, size_t n_rows, size_t n_cols){
 
 double** read_csv(char* path){
   // check file existence
-  if (access(path, F_OK) == -1){
+  /*if (access(path, F_OK) == -1){
     printf("File not found.  Abort.");
     exit(EXIT_FAILURE);
-  }
+  }*/
   // find shape
   FILE* fp = fopen(path, "r");
   shape shp = shape_of(fp);
@@ -89,10 +90,10 @@ double** read_csv(char* path){
 
 sample* make_samples_from_csv(char* path){
   // check file existence
-  if (access(path, F_OK) == -1){
+  /*if (access(path, F_OK) == -1){
     printf("File not found.  Abort.");
     exit(EXIT_FAILURE);
-  }
+  }*/
   // find shape
   FILE* fp = fopen(path, "r");
   shape shp = shape_of(fp);

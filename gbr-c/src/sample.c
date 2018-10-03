@@ -88,3 +88,20 @@ void print_samples(sample samples[], size_t num_samples, size_t num_features) {
     printf("], %.3f)\n", samples[i].target);
   }
 }
+
+void fprint_samples(char* outfile, sample samples[], size_t num_samples, size_t num_features){
+
+  FILE* fp_w = fopen(outfile, "w");
+
+  size_t i, dim;
+  //fprintf(fp_w, "([feature], target)\n");
+  for (i = 0; i < num_samples; i++) {
+    //fprintf(fp_w, "");
+    for (dim =0; dim < num_features; dim++){
+      fprintf(fp_w, "%.9f,", samples[i].features[dim]);
+    }
+    fprintf(fp_w, ", %.9f\n", samples[i].target);
+  }
+
+  fclose(fp_w);
+}

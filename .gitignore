@@ -7,4 +7,11 @@
 *.o
 *.csv
 *.ipynb
-
+*.sln
+*.vcxproj*
+test/
+gch/
+*.py
+Debug/
+.vs/
+org.eclipse*

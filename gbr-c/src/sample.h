@@ -19,4 +19,6 @@ int comp_sample(const void*, const void*);
 void get_features(sample* smps, size_t n_samples, double** parr);
 
 void print_samples(sample samples[], size_t num_samples, size_t num_features);
+void fprint_samples(char* outfile, sample samples[], size_t num_samples, size_t num_features);
+
 #endif
