@@ -47,6 +47,15 @@ int main(int argc, char **argv) {
   double** input_features = malloc(n_rows * sizeof(double*));
   get_features(training_samples, n_rows, input_features);
   
+  // initalise slice table
+  size_t** slice_table = malloc(sizeof(size_t*) * n_features);
+  for (size_t i = 0; i < n_features; i++)
+  {
+	  slice_table[i] = malloc(sizeof(size_t) * 2);
+	  slice_table[i][0] = 0;
+	  slice_table[i][1] = n_rows;
+  }
+
   // initialise forest (set of trees)
   node forest[NUM_TREES][NUM_NODES];
   init_forest(forest, NUM_TREES, NUM_NODES);
@@ -79,7 +88,7 @@ int main(int argc, char **argv) {
   printf("all malloc done\n");
   halt();
 
-  gbr_fit(forest, NUM_TREES, NUM_NODES, residual_samples, training_samples, len_data, pred, pred_by_each_tree, residual_samples_cp, input_features, n_features);
+  gbr_fit(forest, NUM_TREES, NUM_NODES, residual_samples, training_samples, len_data, pred, pred_by_each_tree, residual_samples_cp, input_features, n_features, slice_table);
   
   puts("Prediction");
   //double result[LEN_DATA] = {0};

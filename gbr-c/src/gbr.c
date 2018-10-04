@@ -22,7 +22,7 @@
 #include "gbr.h"
 #include "for_debug.h"
 
-void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features){
+void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features, size_t** slice_table){
   /* double pred[LEN_DATA] = { 0 }; */
   /* double pred_by_each_tree[LEN_DATA] = { 0 }; */
   /* sample residual_samples_cp[LEN_DATA] = {0}; */
@@ -41,7 +41,7 @@ void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* r
 
     fprint_samples(outfile, residual_samples_cp, len_data, n_features);
 
-    fit(forest[n_tree], residual_samples_cp, len_data, n_features);
+    fit(forest[n_tree], residual_samples_cp, len_data, n_features, slice_table);
 
     print_tree(forest[n_tree], n_nodes);
     // halt();

@@ -36,11 +36,11 @@ int find_left(int);
 int find_right(int);
 int find_depth(int);
 
-void fit(node* tree, sample* samples, size_t, size_t);
+void fit(node* tree, sample* samples, size_t, size_t, size_t** slice_table);
 void predict(node* tree, size_t, double** predictors, double* result, size_t);
 
 void init_tree(node* tree, size_t);
-void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t dim_features, size_t slice_start, size_t slice_end);
+void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t dim_features, size_t slice_ranges[][2]);
 bool grow_should_stop(size_t, size_t, size_t);
 
 double eval_split(sample* arr, size_t, size_t, size_t);

@@ -3,6 +3,9 @@
 
 #include "sample.h"
 
+#define pow2(a) a * a
+
+
 size_t comp_feat_dim = 0;
 double squared_error(sample* arr, size_t slice_start, size_t slice_end){
   int len = slice_end - slice_start;
@@ -15,12 +18,12 @@ double squared_error(sample* arr, size_t slice_start, size_t slice_end){
   double sum = 0;
   size_t i;
   for (i = slice_start; i < slice_end; i++){
-    squared_sum += pow(arr[i].target, 2);
+	  squared_sum += pow2(arr[i].target);//pow(arr[i].target, 2);
     sum += arr[i].target;
   }
   double mean = sum / len;
 
-  return squared_sum - len * pow(mean, 2);
+  return squared_sum - len * pow2(mean);//, 2);
 }
 
 double var_target(sample* arr, size_t slice_start, size_t slice_end) {
@@ -35,25 +38,32 @@ double var_target(sample* arr, size_t slice_start, size_t slice_end) {
   size_t i;
   for (i = slice_start; i < slice_end; i++) {
     //printf("%.3f\n", arr[i]);
-    squared += pow(arr[i].target, 2);
+	  squared += pow2(arr[i].target);//pow(arr[i].target, 2);
     mean += arr[i].target;
   }
   mean = mean / len;
 
   double squared_mean = squared / len;
-  double mean_squared = pow(mean, 2);
+  double mean_squared = pow2(mean);//, 2);
   // <X^2> - <X>^2
   return (squared_mean - mean_squared);
 }
 
-double mean_target(sample* arr, size_t slice_start, size_t slice_end) {
+double mean_target(sample* arr, size_t len_data, size_t n_features, size_t slice_ranges[][2]) {
   double mean = 0;
-  double len = slice_end - slice_start;
-  size_t i = 0;
-  for (i = slice_start; i < slice_end; i++) {
-    mean += arr[i].target;
+  size_t data_count = 0;
+  for (size_t f = 0; f < n_features; f++){
+    extern comp_feat_dim;
+    comp_feat_dim = f; // MODFIY GLOBAL VARIABLE
+    qsort(arr, len_data, sizeof(sample), comp_sample);
+    size_t i = 0;
+    for (i = slice_start; i < slice_end; i++) {
+      mean += arr[i].target;
+      data_count++; // counts the number of samples with in the slice_range
+    }
   }
-  mean = mean / len;
+
+  mean = mean / data_count;
   return mean;
 }
 
