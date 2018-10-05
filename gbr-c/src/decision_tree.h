@@ -31,6 +31,8 @@ typedef struct {
   bool is_terminal;
 } node;
 
+enum LR_flag {left = 0, right = 1, none = 2};
+
 /* prototypes */
 int find_left(int);
 int find_right(int);
@@ -43,7 +45,8 @@ void init_tree(node* tree, size_t);
 void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t dim_features, size_t slice_ranges[][2]);
 bool grow_should_stop(size_t, size_t, size_t);
 
-double eval_split(sample* arr, size_t, size_t, size_t);
+double eval_split(sample*, size_t*, enum LR_flag*, size_t);
+void init_ids(size_t*, size_t);
 
 double trace_tree(node* tree, size_t, double* predictor);
 

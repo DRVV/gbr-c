@@ -18,6 +18,7 @@
 #include "misc.h"
 
 #include "for_debug.h"
+#include <assert.h>
 
 void fit(node* tree, sample* training_samples, size_t len_data, size_t n_features) {
   // NOTE: grow_tree for training_samples[0:len_data]
@@ -56,20 +57,46 @@ double trace_tree(node* tree, size_t node_id, double* predictor) {
   exit(EXIT_FAILURE);
 }
 
-double eval_split(sample* arr, size_t slice_start, size_t slice, size_t slice_end) {
+double eval_split(sample* samples, size_t* sample_ids, enum LR_flag* LR_flags, size_t len){
+  double L_squared_sum = 0;
+  double L_sum = 0;
+  double L_mean = 0;
+  int L_count = 0;
+  
+  double R_squared_sum = 0;
+  double R_sum = 0;
+  double R_mean = 0;
+  int R_count = 0;
+  
+  for (size_t i = 0; i < len; i++){
+    if (LR_flags[i] == left){
+      L_sum += samples[sample_ids[i]].target;
+      L_squared_sum += pow2(samples[sample_ids[i]].target);
+      L_count++;
+    }else{
+      R_sum += samples[sample_ids[i]].target;
+      R_squared_sum += pow2(samples[sample_ids[i]].target);
+      R_count++;
+    }
+  }
+  assert(L_count + R_count == len);
+    
+  L_mean = L_sum / L_count;
+  R_mean = R_sum / R_count;
+  
   /* calculate each variance*/
-  double score_left = squared_error(arr, slice_start, slice); // squared_error for arr[slice_start:slice]
-  double score_right = squared_error(arr, slice, slice_end); // squared_error for arr[slice:slice_end]
+  double L_score = L_squared_sum - L_count * pow2(L_mean);
+  double R_score = R_squared_sum - R_count * pow2(R_mean);
 
   // total score
-  return (score_left + score_right);
+  return L_score + R_score;
 }
 
-void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t dim_features, size_t slice_ranges[][2]) {
+void grow_tree(node* tree, size_t node_id, const sample* samples, size_t* sample_ids, const double** thresholds, const size_t slice_ranges[][2], size_t len_data, size_t dim_features) {
   
   // check stopping condition
   if (grow_should_stop(node_id, dim_features, slice_ranges)) {
-    terminalize(&(tree[node_id]), arr, slice_ranges);
+    terminalize(&(tree[node_id]), samples, slice_ranges);
     return;
   } else {
     // copy range table
@@ -95,25 +122,23 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t 
       
       extern size_t comp_feat_dim;
       comp_feat_dim = feat_dim;  // MODIFYING GLOBAL VARIABLE USED BY 'comp_sample'
-      qsort(arr, len_data, sizeof(sample), comp_sample); // arr gets shuffled.
+      qsort(samples, len_data, sizeof(sample), comp_sample); // samples gets shuffled.
 
       size_t slice;
       size_t init_slice = slice_start + MIN_SAMPLES; // the first slice should not be tested
       size_t last_slice = slice_end - MIN_SAMPLES + 1; // the last slice
       for (slice = init_slice; slice < last_slice; slice++) {
-        if (arr[slice - 1].features[feat_dim] == arr[slice].features[feat_dim]){
-          continue; // skip a split with the same feature (corresp. removing duplicate in features)
-        }
-        // split arr into arr[slice_start:slice] and arr[slice:slice_end]
+	// find split
+	gen_LR(samples, feat_dim, thresholds[feat_dim][slice], len, LR_flags);
 
-	// NOTE: eval_split relies on the shuffled arr (no need to specify feat_dim)
-        double score = eval_split(arr, dim, slice_start, slice, slice_end);
+	// NOTE: eval_split relies on the shuffled samples (no need to specify feat_dim)
+        double score = eval_split(samples, ids, dim, LR_flags, len);
 
         // update the score is better
         if (score < score_best) {
           score_best = score;
           slice_best = slice;
-	  value_best = arr[slice].features[feat_dim];
+	  value_best = samples[slice].features[feat_dim];
           dim_best = feat_dim;
         }
       }
@@ -125,15 +150,15 @@ void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t 
 
     /* RECURSION: 'grow_tree' against child nodes */
 
-    // LEFT: arr[slice_start:slice_best]
+    // LEFT: samples[slice_start:slice_best]
     ranges[dim_best][0] = slice_ranges[dim_best][0]; // recover original initial slice
     ranges[dim_best][1] = slice_best;
-    grow_tree(tree, tree[node_id].id_left, arr, len_data, dim_features, ranges);
+    grow_tree(tree, tree[node_id].id_left, samples, len_data, dim_features, ranges);
 
-    // RIGHT: arr[right_slice_start:right_slice_end]
+    // RIGHT: samples[right_slice_start:right_slice_end]
     ranges[dim_best][0] = slice_best;
     ranges[dim_best][1] = slice_ranges[dim_best][1]; // recover original final slice
-    grow_tree(tree, tree[node_id].id_right, arr, len_data, dim_features, ranges);
+    grow_tree(tree, tree[node_id].id_right, samples, len_data, dim_features, ranges);
   }
 }
 
@@ -200,4 +225,14 @@ int find_depth(int i) {
 void terminalize(node* target_node, sample* arr, size_t slice_ranges[][2]) {
   (*target_node).is_terminal = true;
   (*target_node).value = mean_target(arr, slice_r);
+}
+
+void gen_LR(sample* samples, size_t dim, double threshold, size_t len, enum LR_flag* LR){
+  for (size_t n = 0; n < len; n++){
+    if (samples[n].features[dim] < threshold){
+      LR[n] = left;
+    } else {
+      LR[n] = right;
+    }
+  }
 }
