@@ -22,11 +22,13 @@
 #include "gbr.h"
 #include "for_debug.h"
 
-void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features, size_t** slice_table){
+void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, size_t* ids, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features, size_t** slice_table, enum LR_flag* LR_flags, double** thresholds){
   /* double pred[LEN_DATA] = { 0 }; */
   /* double pred_by_each_tree[LEN_DATA] = { 0 }; */
   /* sample residual_samples_cp[LEN_DATA] = {0}; */
   // residual_samples = training_samples;
+
+  /* STORE ORIGINAL INFO */
   memcpy(residual_samples, training_samples, sizeof(sample) * len_data);
   size_t n_tree;
   for (n_tree = 0; n_tree < n_trees; n_tree++) {
@@ -41,7 +43,10 @@ void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* r
 
     fprint_samples(outfile, residual_samples_cp, len_data, n_features);
 
-    fit(forest[n_tree], residual_samples_cp, len_data, n_features, slice_table);
+    // recover full ids before boosting
+    init_ids(ids, len_data);
+    
+    fit(forest[n_tree], residual_samples_cp, ids, len_data, thresholds, n_features, LR_flags);
 
     print_tree(forest[n_tree], n_nodes);
     // halt();

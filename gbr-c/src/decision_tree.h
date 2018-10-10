@@ -16,8 +16,8 @@
 #define MIN_SAMPLES 2
 
 // training data format
-/* #define NUM_FEATURES 1 */
-/* #define DIM_FEATURES NUM_FEATURES  <-- defined for later use*/ 
+#define NUM_FEATURES 1
+#define DIM_FEATURES NUM_FEATURES// <-- defined for later use*/ 
 
 #define DEFAULT_FEATURE -1
 #define DEFAULT_VALUE -84.3
@@ -31,26 +31,34 @@ typedef struct {
   bool is_terminal;
 } node;
 
-enum LR_flag {left = 0, right = 1, none = 2};
+enum LR_flag {left = 1, right = 2, none = 0}; // none for 'false'
 
 /* prototypes */
 int find_left(int);
 int find_right(int);
 int find_depth(int);
 
-void fit(node* tree, sample* samples, size_t, size_t, size_t** slice_table);
+void fit(node* tree, sample* training_samples, size_t* init_ids, size_t len_data, double** thresholds, size_t n_features, enum LR_flag* init_flags);
 void predict(node* tree, size_t, double** predictors, double* result, size_t);
 
 void init_tree(node* tree, size_t);
-void grow_tree(node* tree, size_t node_id, sample* arr, size_t len_data, size_t dim_features, size_t slice_ranges[][2]);
-bool grow_should_stop(size_t, size_t, size_t);
+void grow_tree(node* tree, size_t node_id, const sample* samples, size_t* sample_ids, enum LR_flag* LR_flags, double** thresholds, const size_t slice_ranges[][2], size_t len_entire_samples, size_t len_ids, size_t dim_features);
 
-double eval_split(sample*, size_t*, enum LR_flag*, size_t);
-void init_ids(size_t*, size_t);
+bool grow_should_stop(size_t, size_t);
+
+double eval_split(const sample* samples, const size_t* sample_ids, const enum LR_flag* LR_flags, size_t len);
 
 double trace_tree(node* tree, size_t, double* predictor);
 
 void print_tree(node tree[], size_t);
-void terminalize(node*, sample*, size_t, size_t);
 
+void terminalize(node* target_node, const sample* samples, size_t len_samples, size_t* ids, size_t len_ids);
+
+
+void init_ids(size_t* ids, size_t len);
+
+void gen_LR(const sample* samples, size_t dim, double threshold, size_t len, enum LR_flag* LR);
+size_t flag2id(const enum LR_flag* LR_list, enum LR_flag flag_to_convert, size_t* id_buffer, size_t len);
+
+void get_threshold(sample*, double**);
 #endif

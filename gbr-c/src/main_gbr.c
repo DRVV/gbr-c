@@ -26,6 +26,9 @@
 void init_samples(sample*, size_t len, size_t num_features);
 
 int main(int argc, char **argv) {
+  
+  printf("INFO: DIM_FEATURES in 'decision_tree.h' is set to %d\n", DIM_FEATURES);
+  
   /* IO (using malloc) */
   char* path = argv[1];
   FILE* fp = fopen(path, "r");
@@ -84,11 +87,18 @@ int main(int argc, char **argv) {
   double* pred = calloc(len_data, sizeof(double));
   double* pred_by_each_tree = calloc(len_data, sizeof(double));
 
+  enum LR_flag* LR_flags = calloc(len_data, sizeof(enum LR_flag));
+  size_t* ids = malloc(len_data * sizeof(size_t));
+  init_ids(ids, len_data);
+
+  /* TODO: find threshold for each dimension */
+  double** thresholds = NULL;
+  get_threshold(training_samples, thresholds);
   
   printf("all malloc done\n");
   halt();
-
-  gbr_fit(forest, NUM_TREES, NUM_NODES, residual_samples, training_samples, len_data, pred, pred_by_each_tree, residual_samples_cp, input_features, n_features, slice_table);
+  
+  gbr_fit(forest, NUM_TREES, NUM_NODES, residual_samples, training_samples, len_data, ids, pred, pred_by_each_tree, residual_samples_cp, input_features, n_features, slice_table, LR_flags, thresholds);
   
   puts("Prediction");
   //double result[LEN_DATA] = {0};
@@ -115,3 +125,4 @@ void init_samples(sample* smps, size_t len, size_t n_features){
     smps[i].target = 0;
   }
 }
+

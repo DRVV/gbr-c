@@ -1,6 +1,6 @@
 #include <stdio.h>
 #include <math.h>
-
+#include <stdlib.h>
 #include "sample.h"
 
 #define pow2(a) a * a
@@ -49,22 +49,13 @@ double var_target(sample* arr, size_t slice_start, size_t slice_end) {
   return (squared_mean - mean_squared);
 }
 
-double mean_target(sample* arr, size_t len_data, size_t n_features, size_t slice_ranges[][2]) {
-  double mean = 0;
-  size_t data_count = 0;
-  for (size_t f = 0; f < n_features; f++){
-    extern comp_feat_dim;
-    comp_feat_dim = f; // MODFIY GLOBAL VARIABLE
-    qsort(arr, len_data, sizeof(sample), comp_sample);
-    size_t i = 0;
-    for (i = slice_start; i < slice_end; i++) {
-      mean += arr[i].target;
-      data_count++; // counts the number of samples with in the slice_range
-    }
+double mean_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand) {
+  double sum = 0;
+  qsort(ids_summand, len_samples, sizeof(size_t), comp_id);
+  for (size_t i = 0; i < len_summand; i++) {
+      sum += samples[i].target;
   }
-
-  mean = mean / data_count;
-  return mean;
+  return sum / len_summand;
 }
 
 void get_features(sample* smps, size_t n_samples, double** parr){
@@ -114,4 +105,12 @@ void fprint_samples(char* outfile, sample samples[], size_t num_samples, size_t 
   }
 
   fclose(fp_w);
+}
+
+int comp_id(const void* a, const void* b) {
+  /* +++++NOTE: GLOBAL VARIABLE 'comp_feat_dim' +++++ */
+  int aa = *(int*) a;
+  int bb = *(int*) b;
+
+  return (aa - bb);
 }

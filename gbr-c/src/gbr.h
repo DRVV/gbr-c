@@ -20,7 +20,8 @@ void print_forest(node forest[][NUM_NODES], size_t, size_t);
 
 //void gbr_predict(node** forest, size_t n_trees, size_t n_nodes, double** features, double* result, size_t len_data);
 //void gbr_fit(node** forest, size_t n_trees, size_t n_nodes, sample* residual_samples, size_t len_data);
-void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features, size_t** slice_tbl);
+void gbr_fit(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, sample* residual_samples, sample* training_samples, size_t len_data, size_t* ids, double* pred, double* pred_by_each_tree, sample* residual_samples_cp, double** features, size_t n_features, size_t** slice_table, enum LR_flag* LR_flags, double** thresholds);
+
 void gbr_predict(node forest[][NUM_NODES], size_t n_trees, size_t n_nodes, double** features, double* result, double* result_delta, size_t len_data);
 
 void get_residual(sample*, double*, sample*, size_t);
