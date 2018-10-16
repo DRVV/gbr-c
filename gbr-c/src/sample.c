@@ -2,6 +2,7 @@
 #include <math.h>
 #include <stdlib.h>
 #include "sample.h"
+#include <string.h>
 
 #define pow2(a) a * a
 
@@ -49,14 +50,34 @@ double var_target(sample* arr, size_t slice_start, size_t slice_end) {
   return (squared_mean - mean_squared);
 }
 
+double sum_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand) {
+  double sum = 0;
+  // qsort(ids_summand, len_samples, sizeof(size_t), comp_id);
+  for (size_t i = 0; i < len_summand; i++) {
+      sum += samples[ids_summand[i]].target;
+  }
+  return sum;
+}
+
+double sqsum_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand) {
+  double sqsum = 0;
+  // qsort(ids_summand, len_samples, sizeof(size_t), comp_id);
+  for (size_t i = 0; i < len_summand; i++) {
+    sqsum += pow2(samples[ids_summand[i]].target);
+  }
+  return sqsum;
+}
+
 double mean_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand) {
   double sum = 0;
-  qsort(ids_summand, len_samples, sizeof(size_t), comp_id);
+  // qsort(ids_summand, len_samples, sizeof(size_t), comp_id);
   for (size_t i = 0; i < len_summand; i++) {
-      sum += samples[i].target;
+      sum += samples[ids_summand[i]].target;
   }
   return sum / len_summand;
 }
+
+
 
 void get_features(sample* smps, size_t n_samples, double** parr){
   size_t i;
@@ -108,9 +129,10 @@ void fprint_samples(char* outfile, sample samples[], size_t num_samples, size_t 
 }
 
 int comp_id(const void* a, const void* b) {
-  /* +++++NOTE: GLOBAL VARIABLE 'comp_feat_dim' +++++ */
+  /// compare sample id (size_t)
   int aa = *(int*) a;
   int bb = *(int*) b;
 
   return (aa - bb);
 }
+

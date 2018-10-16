@@ -4,7 +4,7 @@
 // #include <unistd.h>
 #include <io.h>
 #include <assert.h>
-
+#include <string.h>
 #include "csv_reader.h"
 
 shape shape_of(FILE* fp){

@@ -8,6 +8,8 @@ typedef struct {
   double target;
 } sample;
 
+double sum_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand);
+double sqsum_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand);
 double mean_target(const sample* samples, size_t len_samples, size_t* ids_summand, size_t len_summand);
 double var_target(sample* arr, size_t, size_t);
 double squared_error(sample* arr, size_t, size_t);
