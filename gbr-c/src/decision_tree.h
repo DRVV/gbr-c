@@ -78,5 +78,5 @@ void get_thresholds(sample* samples, sample* smpl_buffer, double** thresholds, s
 // void get_threshold(sample*, double**);
 
 double loss(lossState ls);
-void init_LR_diff(enum LR_flag* LR_diff, size_t len_entire_samples);
+void init_LR(enum LR_flag* LR, size_t len_entire_samples, enum LR_flag);
 #endif

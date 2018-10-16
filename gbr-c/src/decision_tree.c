@@ -26,15 +26,19 @@
 void fit(node* tree, sample* training_samples, size_t** init_ids, size_t len_data, double** thresholds, size_t*** ranges, size_t n_features, enum LR_flag* init_flags, enum LR_flag* LR_diff) {
   // NOTE: grow_tree for training_samples[0:len_data]
 
-  // the initial node_id: 0
+  // initial node_id: 0
   size_t root_node_id = 0;
+
+  // initial configuration is "all right"
   lossState L_init_lossState = {.sum = 0,
                                 .sqsum = 0,
                                 .len = 0};
   lossState R_init_lossState = {.sum = sum_target(training_samples, len_data, init_ids[root_node_id], len_data),
                                 .sqsum = sqsum_target(training_samples, len_data, init_ids[root_node_id], len_data),
                                 .len = len_data};
+  init_LR(init_flags, len_data, right);
 
+  // entry to recursion
   grow_tree(tree, root_node_id, training_samples, init_ids, init_flags, LR_diff, thresholds, ranges, len_data, len_data, n_features, L_init_lossState, R_init_lossState);
 }
 
@@ -169,6 +173,7 @@ void grow_tree(node* tree, size_t node_id, const sample* samples, size_t** sampl
 
   // for every possible split, evaluate the score of split
   // bool split_ok = false;
+  bool no_split_occurred = true;
   for (size_t feat_dim = 0; feat_dim < dim_features; feat_dim++){ // 2.1 choose feature dimension to split
     // set range for the feat_dim
     printf("    feat_dim: %Iu\n", feat_dim);
@@ -177,13 +182,13 @@ void grow_tree(node* tree, size_t node_id, const sample* samples, size_t** sampl
     
     for (size_t slice = slice_start; slice < slice_end; slice++) { // 2.2 choose a split and evaluate the score of the split
       // find split (-> modifies LR_flags)
-      gen_LR_diff(samples, sample_ids[node_id], feat_dim, thresholds[feat_dim][slice], len_ids, LR_flags, LR_diff); // 'LR_flags' is allocated by main function, modified by this function
+      bool split_ok = gen_LR_diff(samples, sample_ids[node_id], feat_dim, thresholds[feat_dim][slice], len_ids, LR_flags, LR_diff); // 'LR_flags' is allocated by main function, modified by this function
       
       // NOTE: eval_split relies on the shuffled samples (no need to specify feat_dim)
       double score = eval_split_diff(samples, sample_ids[node_id], LR_diff, &L_loss_state, &R_loss_state, len_ids);
 
       // update the score when it is better
-      if (score < score_best) {
+      if ((score < score_best) && split_ok) {
         score_best = score;
         slice_best = slice;
 	      //value_best = samples[slice].features[feat_dim];
@@ -195,8 +200,14 @@ void grow_tree(node* tree, size_t node_id, const sample* samples, size_t** sampl
         R_loss_state_best = R_loss_state;
         //LR_flags[node_id]
 	      //memcpy(LR_best, LR_flags, len_ids * sizeof(enum LR_flag));
+        no_split_occurred = false;
       }
     }
+  }
+  if (no_split_occurred) {
+    printf("No split occurred.  Terminalize the node.");
+    terminalize(&(tree[node_id]), samples, len_entire_samples, sample_ids[node_id], len_ids);
+    return;
   }
   /*if (!split_ok) {
     terminalize(&(tree[node_id]), samples, len_entire_samples, sample_ids[node_id], len_ids);
@@ -222,20 +233,20 @@ void grow_tree(node* tree, size_t node_id, const sample* samples, size_t** sampl
   gen_LR(samples, sample_ids[node_id], dim_best, thresholds[dim_best][slice_best], len_ids, LR_flags);
   size_t len_left = flag2id(LR_flags, left, sample_ids, id_L, node_id, len_ids); // sample_ids -> array of left ids
   lossState init_state = { .sum = 0,.sqsum = 0,.len = 0 };
-  init_LR_diff(LR_diff, len_entire_samples);
+  init_LR(LR_diff, len_entire_samples, none);
   grow_tree(tree, id_L, samples, sample_ids, LR_flags, LR_diff, thresholds, slice_ranges, len_entire_samples, len_left, dim_features, L_loss_state_best, init_state);
 
   // RIGHT: samples[right_slice_start:right_slice_end]
   size_t id_R = tree[node_id].id_right;
   slice_ranges[id_R][dim_best][0] = slice_best;
   slice_ranges[id_R][dim_best][1] = slice_ranges[node_id][dim_best][1];
-  if (node_id == 2) {
+  if (node_id == 6) {
     printf("DEBUG POINT\n");
   }
   gen_LR(samples, sample_ids[node_id], dim_best, thresholds[dim_best][slice_best], len_ids, LR_flags);
   size_t len_right = flag2id(LR_flags, right, sample_ids, id_R, node_id, len_ids); // sample_ids -> array of right ids
   assert(len_left + len_right == len_ids);
-  init_LR_diff(LR_diff, len_entire_samples);
+  init_LR(LR_diff, len_entire_samples, none);
   grow_tree(tree, id_R, samples, sample_ids, LR_flags, LR_diff, thresholds, slice_ranges, len_entire_samples, len_right, dim_features, init_state, R_loss_state_best);
 }
 
@@ -413,8 +424,8 @@ double loss(lossState ls) {
     return -1; // loss cannot be calculated
 }
 
-void init_LR_diff(enum LR_flag* LR_diff, size_t len_entire_samples) {
+void init_LR(enum LR_flag* LR, size_t len_entire_samples, enum LR_flag flag) {
   for (size_t i = 0; i < len_entire_samples; i++) {
-    LR_diff[i] = none;
+    LR[i] = flag;
   }
 }
